@@ -1,6 +1,8 @@
 dnl $Id$
 dnl config.m4 for extension rlog
 
+LIBRLOG_LIBDIR="src"
+
 PHP_ARG_ENABLE(rlog, whether to enable rlog support,
 [  --enable-rlog               Enable rlog support])
 
@@ -14,26 +16,26 @@ if test "$PHP_RLOG" != "no"; then
 
   dnl # --with-rlog -> check with-path
   SEARCH_PATH="/usr/local /usr"     # you might want to change this
-  SEARCH_FOR="/include/librlog.h"
+  SEARCH_FOR="/src/librlog.h"
   if test -r $PHP_LIBRLOG_DIR/$SEARCH_FOR; then # path given as parameter
-    RLOG_DIR=$PHP_LIBRLOG_DIR
+    LIBRLOG_DIR=$PHP_LIBRLOG_DIR
   else # search default path list
     AC_MSG_CHECKING([for rlog files in default path])
     for i in $SEARCH_PATH ; do
       if test -r $i/$SEARCH_FOR; then
-        RLOG_DIR=$i
+        LIBRLOG_DIR=$i
         AC_MSG_RESULT(found in $i)
       fi
     done
   fi
 
-  if test -z "$RLOG_DIR"; then
+  if test -z "$LIBRLOG_DIR"; then
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([Please reinstall the librlog])
   fi
 
   dnl # --with-rlog -> add include path
-  PHP_ADD_INCLUDE($RLOG_DIR/include)
+  PHP_ADD_INCLUDE($LIBRLOG_DIR/src)
 
   dnl # --with-rlog -> check for lib and symbol presence
   LIBNAME=rlog # you may want to change this
@@ -41,12 +43,12 @@ if test "$PHP_RLOG" != "no"; then
 
   PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
   [
-    PHP_ADD_LIBRARY_WITH_PATH($LIBNAME, $PHP_LIBRLOG_DIR/$PHP_LIBDIR, RLOG_SHARED_LIBADD)
+    PHP_ADD_LIBRARY_WITH_PATH($LIBNAME, $LIBRLOG_DIR/$LIBRLOG_LIBDIR, RLOG_SHARED_LIBADD)
     AC_DEFINE(HAVE_RLOGLIB,1,[ ])
   ],[
     AC_MSG_ERROR([wrong rlog lib version or lib not found])
   ],[
-    -L$PHP_LIBRLOG_DIR/$PHP_LIBDIR -lm
+    -L$LIBRLOG_DIR/$LIBRLOG_LIBDIR -lm
   ])
 
   PHP_SUBST(RLOG_SHARED_LIBADD)
