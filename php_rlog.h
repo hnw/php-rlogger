@@ -30,6 +30,10 @@ extern zend_module_entry rlog_module_entry;
 #include "TSRM.h"
 #endif
 
+typedef struct {
+	struct rlog *ptr;
+} php_rlog;
+
 ZEND_BEGIN_MODULE_GLOBALS(rlog)
 	char *target;
 	int timeout;

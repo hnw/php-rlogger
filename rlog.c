@@ -27,7 +27,24 @@ ZEND_DECLARE_MODULE_GLOBALS(rlog)
 static int le_rlog;
 #define le_rlog_name "rlog"
 
-static void rlog_dtor(zend_resource *rsrc);
+#if PHP_VERSION_ID >= 70000
+# define RLOG_FETCH_RESOURCE(php_rlog_ptr, z_ptr) do { \
+		if ((php_rlog_ptr = (php_rlog *)zend_fetch_resource(Z_RES_P(z_ptr), le_rlog_name, le_rlog)) == NULL) { \
+			RETURN_FALSE; \
+		} \
+} while (0)
+#else
+#define RLOG_FETCH_RESOURCE(php_rlog_ptr, z_ptr) ZEND_FETCH_RESOURCE(php_rlog_ptr, php_rlog *, &z_ptr, -1, le_rlog_name, le_rlog)
+#endif
+
+static void rlog_dtor(
+#if PHP_VERSION_ID >= 70000
+					  zend_resource *rsrc
+#else
+					  zend_rsrc_list_entry *rsrc
+#endif
+					  TSRMLS_DC);
+
 
 /* {{{ PHP_INI
  */
@@ -41,10 +58,10 @@ PHP_INI_END()
  */
 PHP_FUNCTION(rlog_open)
 {
-	struct rlog *rlog;
+	php_rlog *rlog =emalloc(sizeof(php_rlog));
 	char *address = NULL;
 	size_t address_len;
-	zend_long timeout;
+	int timeout;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sl", &address, &address_len, &timeout) == FAILURE) {
 		return;
@@ -56,45 +73,46 @@ PHP_FUNCTION(rlog_open)
 		timeout = INI_INT("rlog.timeout");
 	}
 
-	php_error_docref(NULL, E_WARNING, "address='%s', timeout=%d", address, timeout);
+	rlog->ptr = rlog_open(address, timeout);
+	if (rlog->ptr == NULL) {
+		efree(rlog);
+		RETURN_NULL();
+	}
 
-	rlog = rlog_open(address, timeout);
-
+#if PHP_VERSION_ID >= 70000
 	RETURN_RES(zend_register_resource(rlog, le_rlog));
+#else
+	ZEND_REGISTER_RESOURCE(return_value, rlog, le_rlog);
+#endif
 }
 /* }}} */
 
-/* {{{ proto int rlog_write(resource r, string tag, string str)
+/* {{{ proto bool rlog_write(resource r, string tag, string str)
  */
 PHP_FUNCTION(rlog_write)
 {
-	zval *RLOG;
-	struct rlog *rlog;
+	zval *res;
+	php_rlog *rlog;
 	char *tag = NULL, *str = NULL;
+#if PHP_VERSION_ID >= 70000
 	size_t tag_len, str_len;
-	int res;
+#else
+	int tag_len, str_len;
+#endif
+	int return_code;
 
-	php_error_docref(NULL, E_WARNING, "rlog:write 1");
-		
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rss", &RLOG, &tag, &tag_len, &str, &str_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rss", &res, &tag, &tag_len, &str, &str_len) == FAILURE) {
 		return;
 	}
+	RLOG_FETCH_RESOURCE(rlog, res);
 
-	php_error_docref(NULL, E_WARNING, "rlog:write %s %d %s %d", tag, tag_len, str, str_len);
+	return_code = rlog_write(rlog->ptr, tag, (size_t)tag_len, str, (size_t)str_len);
 
-	#if PHP_VERSION_ID >= 70000
-	if ((rlog = (struct rlog *)zend_fetch_resource(Z_RES_P(RLOG), le_rlog_name, le_rlog)) == NULL) {
+	if (return_code == 0) {
+		RETURN_TRUE;
+	} else {
 		RETURN_FALSE;
 	}
-#else
-	ZEND_FETCH_RESOURCE(rlog, struct rlog *, &RLOG, -1, le_rlog_name, le_rlog);
-#endif
-	
-	res = rlog_write(rlog, tag, tag_len, str, str_len);
-
-	php_error_docref(NULL, E_WARNING, "rlog:write 2");
-		
-	RETURN_LONG(res);
 }
 /* }}} */
 
@@ -102,31 +120,38 @@ PHP_FUNCTION(rlog_write)
  */
 PHP_FUNCTION(rlog_close)
 {
-	zval *RLOG;
-	struct rlog *rlog;
+	zval *res;
+	php_rlog *rlog;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", &RLOG) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", &res) == FAILURE) {
 		return;
 	}
 
-#if PHP_VERSION_ID >= 70000
-	if ((rlog = (struct rlog *)zend_fetch_resource(Z_RES_P(RLOG), le_rlog_name, le_rlog)) == NULL) {
-		RETURN_FALSE;
-	}
-#else
-	ZEND_FETCH_RESOURCE(rlog, struct rlog *, &RLOG, -1, le_rlog_name, le_rlog);
-#endif
+	RLOG_FETCH_RESOURCE(rlog, res);
 
-	rlog_close(rlog);
+#if PHP_VERSION_ID >= 70000
+	zend_list_close(Z_RES_P(res));
+#else
+	zend_list_delete(Z_RESVAL_P(res));
+#endif
 
 	return;
 }
 /* }}} */
 
-/* {{{ xml_parser_dtor() */
-static void rlog_dtor(zend_resource *rsrc)
+/* {{{ rlog_dtor() */
+
+static void rlog_dtor(
+#if PHP_VERSION_ID >= 70000
+					  zend_resource *rsrc
+#else
+					  zend_rsrc_list_entry *rsrc
+#endif
+					  TSRMLS_DC)
 {
-	struct rlog *rlog = (struct rlog *)rsrc->ptr;
+	php_rlog *rlog = (php_rlog *)rsrc->ptr;
+
+	rlog_close(rlog->ptr);
 	efree(rlog);
 }
 /* }}} */
