@@ -7,18 +7,19 @@ php:
   - 5.6
   - 7.0
 
+env:
+  - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all"
+
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq libev-dev libpcre3-dev
-  - cd ..
-  - git clone https://github.com/pandax381/rlogd.git rlogd
+  - pushd ..
+  - git clone -b use-pic https://github.com/hnw/rlogd.git rlogd
   - cd rlogd
   - ./autogen.sh
   - ./configure
   - make
-  
-env:
-  - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all"
+  - popd
 
 before_script:
   - phpize && ./configure --with-librlog-dir=../rlogd/ && make
