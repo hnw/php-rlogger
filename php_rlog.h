@@ -36,13 +36,24 @@ typedef struct {
 
 ZEND_BEGIN_MODULE_GLOBALS(rlog)
 	char *target;
-	int timeout;
+#if PHP_VERSION_ID >= 70000
+	zend_long timeout;
+#else
+	long timeout;
+#endif
 ZEND_END_MODULE_GLOBALS(rlog)
 
-#ifdef ZTS
-#define RLOG_G(v) TSRMG(rlog_globals_id, zend_rlog_globals *, v)
+#if PHP_VERSION_ID >= 70000
+#    define RLOG_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(rlog, v)
+#    if defined(ZTS) && defined(COMPILE_DL_RLOG)
+ZEND_TSRMLS_CACHE_EXTERN();
+#    endif
 #else
-#define RLOG_G(v) (rlog_globals.v)
+#    ifdef ZTS
+#        define RLOG_G(v) TSRMG(rlog_globals_id, zend_rlog_globals *, v)
+#    else
+#        define RLOG_G(v) (rlog_globals.v)
+#    endif
 #endif
 
 #endif	/* PHP_RLOG_H */

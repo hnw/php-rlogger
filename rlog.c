@@ -158,9 +158,10 @@ static void rlog_dtor(
 
 /* {{{ php_rlog_init_globals
  */
-static void php_rlog_init_globals(zend_rlog_globals *rlog_globals)
+static void php_rlog_init_globals(zend_rlog_globals *rlog_globals TSRMLS_DC)
 {
 	rlog_globals->target = NULL;
+	rlog_globals->timeout = 3000;
 }
 /* }}} */
 
@@ -168,9 +169,15 @@ static void php_rlog_init_globals(zend_rlog_globals *rlog_globals)
  */
 PHP_MINIT_FUNCTION(rlog)
 {
+#if PHP_VERSION_ID >= 70000 && defined(COMPILE_DL_GET) && defined(ZTS)
+	ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+
+	ZEND_INIT_MODULE_GLOBALS(rlog, php_rlog_init_globals, NULL);
+	REGISTER_INI_ENTRIES();
+
 	le_rlog = zend_register_list_destructors_ex(rlog_dtor, NULL, le_rlog_name, module_number);
 
-	REGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
 /* }}} */
@@ -243,6 +250,9 @@ zend_module_entry rlog_module_entry = {
 /* }}} */
 
 #ifdef COMPILE_DL_RLOG
+#    if PHP_VERSION_ID >= 70000 && defined(ZTS)
+ZEND_TSRMLS_CACHE_DEFINE();
+#    endif
 ZEND_GET_MODULE(rlog)
 #endif
 
