@@ -1,3 +1,4 @@
+sudo: false
 language: php
 
 php:
@@ -8,17 +9,16 @@ php:
   - 7.0
 
 env:
-  - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all"
+  - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all" ax_cv_have_EV=yes ax_cv_have_PCRE=yes
 
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq libev-dev libpcre3-dev
   - pushd ..
   - git clone -b use-pic https://github.com/hnw/rlogd.git rlogd
   - cd rlogd
   - ./autogen.sh
   - ./configure
-  - make
+  - cd src
+  - make librlog.a
   - popd
 
 before_script:
