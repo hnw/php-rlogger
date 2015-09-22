@@ -91,6 +91,8 @@ PHP_METHOD(rlog, __construct)
 
 	rlog_obj->rlog = rlog;
 	rlog_obj->initialized = 1;
+
+	zend_update_property_string(php_rlog_entry, object, "address", sizeof("address") - 1, address TSRMLS_CC);
 }
 /* }}} */
 
@@ -153,6 +155,7 @@ PHP_METHOD(rlog, close)
 			rlog_obj->rlog = NULL;
 		}
 		rlog_obj->initialized = 0;
+		zend_update_property_string(php_rlog_entry, object, "address", sizeof("address") - 1, "" TSRMLS_CC);
 	}
 
 	return;
@@ -270,6 +273,8 @@ PHP_MINIT_FUNCTION(rlog)
 #endif
 	rlog_object_handlers.clone_obj = NULL;
 	php_rlog_entry = zend_register_internal_class(&ce TSRMLS_CC);
+
+	zend_declare_property_string(php_rlog_entry, "address", sizeof("address")-1, "", ZEND_ACC_PROTECTED TSRMLS_CC);
 
 	ZEND_INIT_MODULE_GLOBALS(rlog, php_rlog_init_globals, NULL);
 	REGISTER_INI_ENTRIES();
