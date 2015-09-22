@@ -32,9 +32,9 @@ try {
 }
 var_dump($rlog);
 --EXPECTF--
-warning: getaddrinfo: nodename nor servname provided, or not known, host=%s, port=%s (common.c:%d)
+warning: getaddrinfo: %s, host=%s, port=%s (common.c:%d)
 string(%d) "Unable to open socket: foobar://%s"
 NULL
-warning: connect: No such file or directory, path=%s (common.c:%d)
+warning: connect: %s, path=%s (common.c:%d)
 string(%d) "Unable to open socket: unix://%s"
 NULL
