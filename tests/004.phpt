@@ -1,5 +1,5 @@
 --TEST--
-Check for Rlog::write()
+Check for Rlog::close()
 --SKIPIF--
 <?php
 	extension_loaded('rlog') or die('skip rlog not available');
@@ -23,8 +23,9 @@ $socket_url  = "unix://" . $socket_path;
 
 $socket = stream_socket_server($socket_url);
 $rlog = new Rlog($socket_url);
-$ret = $rlog->write("example.acc", "foobar");
-var_dump($ret);
+$rlog->close();
+var_dump(is_object($rlog));
+$rlog = null;
 fclose($socket);
 unlink($socket_path);
 --EXPECT--

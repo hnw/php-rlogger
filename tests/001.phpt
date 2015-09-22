@@ -3,7 +3,7 @@ Check for rlog presence
 --SKIPIF--
 <?php if (!extension_loaded("rlog")) print "skip"; ?>
 --FILE--
-<?php 
+<?php
 echo "rlog extension is available";
 /*
 	you can add regression tests for your extension here

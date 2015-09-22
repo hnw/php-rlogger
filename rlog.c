@@ -19,32 +19,19 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
+#include "Zend/zend_exceptions.h"
 #include "php_rlog.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(rlog)
 
 /* True global resources - no need for thread safety here */
 static int le_rlog;
-#define le_rlog_name "rlog"
 
-#if PHP_VERSION_ID >= 70000
-# define RLOG_FETCH_RESOURCE(php_rlog_ptr, z_ptr) do { \
-		if ((php_rlog_ptr = (php_rlog *)zend_fetch_resource(Z_RES_P(z_ptr), le_rlog_name, le_rlog)) == NULL) { \
-			RETURN_FALSE; \
-		} \
-} while (0)
-#else
-#define RLOG_FETCH_RESOURCE(php_rlog_ptr, z_ptr) ZEND_FETCH_RESOURCE(php_rlog_ptr, php_rlog *, &z_ptr, -1, le_rlog_name, le_rlog)
-#endif
-
-static void rlog_dtor(
-#if PHP_VERSION_ID >= 70000
-					  zend_resource *rsrc
-#else
-					  zend_rsrc_list_entry *rsrc
-#endif
-					  TSRMLS_DC);
-
+#define RLOG_CHECK_INITIALIZED(rlog_obj) \
+        if (!(rlog_obj) || !(rlog_obj->initialized)) { \
+			zend_throw_exception(zend_exception_get_default(TSRMLS_C), "The Rlog object has not been correctly initialised", 0 TSRMLS_CC); \
+                RETURN_FALSE; \
+        }
 
 /* {{{ PHP_INI
  */
@@ -54,18 +41,41 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 /* }}} */
 
-/* {{{ proto resource rlog_open(string address, int timeout)
- */
-PHP_FUNCTION(rlog_open)
+/* Handlers */
+static zend_object_handlers rlog_object_handlers;
+
+/* Class entries */
+zend_class_entry *php_rlog_entry;
+
+/* {{{ proto int Rlog::__construct([string address, [int timeout]])
+   __constructor for Rlog. */
+PHP_METHOD(rlog, __construct)
 {
-	php_rlog *rlog =emalloc(sizeof(php_rlog));
+	zval *object = getThis();
+	php_rlog_object *rlog_obj;
+	struct rlog *rlog;
 	char *address = NULL;
 	size_t address_len;
 	int timeout;
+	zend_error_handling error_handling;
 
+#if PHP_VERSION_ID >= 70000
+	rlog_obj = Z_RLOG_P(object);
+#else
+	rlog_obj = (php_rlog_object *)zend_object_store_get_object(object TSRMLS_CC);
+#endif
+
+	if (rlog_obj->initialized) {
+		zend_throw_exception(zend_exception_get_default(TSRMLS_C), "Already initialized Rlog Object", 0 TSRMLS_CC);
+	}
+
+	zend_replace_error_handling(EH_THROW, NULL, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sl", &address, &address_len, &timeout) == FAILURE) {
+		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
+	zend_restore_error_handling(&error_handling TSRMLS_CC);
+
 	switch (ZEND_NUM_ARGS()) {
 	case 0:
 		address = INI_STR("rlog.target");
@@ -73,26 +83,23 @@ PHP_FUNCTION(rlog_open)
 		timeout = INI_INT("rlog.timeout");
 	}
 
-	rlog->ptr = rlog_open(address, timeout);
-	if (rlog->ptr == NULL) {
-		efree(rlog);
-		RETURN_NULL();
+	rlog = rlog_open(address, timeout);
+	if (rlog == NULL) {
+		zend_throw_exception_ex(zend_exception_get_default(TSRMLS_C), 0 TSRMLS_CC, "Unable to open socket: %s", address);
+		return;
 	}
 
-#if PHP_VERSION_ID >= 70000
-	RETURN_RES(zend_register_resource(rlog, le_rlog));
-#else
-	ZEND_REGISTER_RESOURCE(return_value, rlog, le_rlog);
-#endif
+	rlog_obj->rlog = rlog;
+	rlog_obj->initialized = 1;
 }
 /* }}} */
 
-/* {{{ proto bool rlog_write(resource r, string tag, string str)
+/* {{{ proto int Rlog::write(string tag, string str)
  */
-PHP_FUNCTION(rlog_write)
+PHP_METHOD(rlog, write)
 {
-	zval *res;
-	php_rlog *rlog;
+	zval *object = getThis();
+	php_rlog_object *rlog_obj;
 	char *tag = NULL, *str = NULL;
 #if PHP_VERSION_ID >= 70000
 	size_t tag_len, str_len;
@@ -101,12 +108,17 @@ PHP_FUNCTION(rlog_write)
 #endif
 	int return_code;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rss", &res, &tag, &tag_len, &str, &str_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &tag, &tag_len, &str, &str_len) == FAILURE) {
 		return;
 	}
-	RLOG_FETCH_RESOURCE(rlog, res);
 
-	return_code = rlog_write(rlog->ptr, tag, (size_t)tag_len, str, (size_t)str_len);
+#if PHP_VERSION_ID >= 70000
+	rlog_obj = Z_RLOG_P(object);
+#else
+	rlog_obj = (php_rlog_object *)zend_object_store_get_object(object TSRMLS_CC);
+#endif
+
+	return_code = rlog_write(rlog_obj->rlog, tag, (size_t)tag_len, str, (size_t)str_len);
 
 	if (return_code == 0) {
 		RETURN_TRUE;
@@ -116,43 +128,26 @@ PHP_FUNCTION(rlog_write)
 }
 /* }}} */
 
-/* {{{ proto void rlog_close(resource r)
+/* {{{ proto void Rlog::close()
  */
-PHP_FUNCTION(rlog_close)
+PHP_METHOD(rlog, close)
 {
-	zval *res;
-	php_rlog *rlog;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", &res) == FAILURE) {
-		return;
-	}
-
-	RLOG_FETCH_RESOURCE(rlog, res);
+	zval *object = getThis();
+	php_rlog_object *rlog_obj;
 
 #if PHP_VERSION_ID >= 70000
-	zend_list_close(Z_RES_P(res));
+	rlog_obj = Z_RLOG_P(object);
 #else
-	zend_list_delete(Z_RESVAL_P(res));
+	rlog_obj = (php_rlog_object *)zend_object_store_get_object(object TSRMLS_CC);
 #endif
+
+	RLOG_CHECK_INITIALIZED(rlog_obj);
+	
+	rlog_close(rlog_obj->rlog);
+	rlog_obj->rlog = NULL;
+	rlog_obj->initialized = 0;
 
 	return;
-}
-/* }}} */
-
-/* {{{ rlog_dtor() */
-
-static void rlog_dtor(
-#if PHP_VERSION_ID >= 70000
-					  zend_resource *rsrc
-#else
-					  zend_rsrc_list_entry *rsrc
-#endif
-					  TSRMLS_DC)
-{
-	php_rlog *rlog = (php_rlog *)rsrc->ptr;
-
-	rlog_close(rlog->ptr);
-	efree(rlog);
 }
 /* }}} */
 
@@ -165,18 +160,104 @@ static void php_rlog_init_globals(zend_rlog_globals *rlog_globals TSRMLS_DC)
 }
 /* }}} */
 
+static void php_rlog_object_free_storage(
+#if PHP_VERSION_ID >= 70000
+										 zend_object *object
+#else
+										 void *object TSRMLS_DC
+#endif
+										 ) /* {{{ */
+{
+	php_rlog_object *intern;
+#if PHP_VERSION_ID >= 70000
+	intern = php_rlog_from_obj(object);
+#else
+	intern = (php_rlog_object *) object;
+#endif
+
+	if (!intern) {
+		return;
+	}
+	if (intern->initialized && intern->rlog) {
+		rlog_close(intern->rlog);
+		intern->rlog = NULL;
+		intern->initialized = 0;
+	}
+	zend_object_std_dtor(&intern->zo TSRMLS_CC);
+#if PHP_VERSION_ID < 70000
+	efree(intern);
+#endif
+}
+
+
+#if PHP_VERSION_ID >= 70000
+static zend_object *php_rlog_object_new
+#else
+static zend_object_value php_rlog_object_new
+#endif
+    (zend_class_entry *class_type TSRMLS_DC) /* {{{ */
+{
+        php_rlog_object *intern;
+#if PHP_VERSION_ID < 70000
+		zend_object_value retval;
+#endif
+
+        /* Allocate memory for it */
+#if PHP_VERSION_ID >= 70000
+        intern = ecalloc(1, sizeof(php_rlog_object) + zend_object_properties_size(class_type));
+#else
+		intern = emalloc(sizeof(php_rlog_object));
+		memset(intern, 0, sizeof(php_rlog_object));
+#endif
+
+        zend_object_std_init(&intern->zo, class_type TSRMLS_CC);
+        object_properties_init(&intern->zo, class_type);
+
+#if PHP_VERSION_ID >= 70000
+        intern->zo.handlers = &rlog_object_handlers;
+        return &intern->zo;
+#else
+		retval.handle = zend_objects_store_put(intern, NULL, (zend_objects_free_object_storage_t) php_rlog_object_free_storage, NULL TSRMLS_CC);
+        retval.handlers = (zend_object_handlers *) &rlog_object_handlers;
+        return retval;
+#endif
+}
+/* }}} */
+
+/* {{{ rlog_class_methods[]
+ */
+const zend_function_entry rlog_class_methods[] = {
+	PHP_ME(rlog, write,       NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(rlog, close,       NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(rlog, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_FE_END
+};
+/* }}} */
+
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(rlog)
 {
+	zend_class_entry ce;
+
 #if PHP_VERSION_ID >= 70000 && defined(COMPILE_DL_GET) && defined(ZTS)
 	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
+	memcpy(&rlog_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+
+	/* Register Rlog Class */
+	INIT_CLASS_ENTRY(ce, "Rlog", rlog_class_methods);
+	ce.create_object = php_rlog_object_new;
+#if PHP_VERSION_ID >= 70000
+	rlog_object_handlers.offset = XtOffsetOf(php_rlog_object, zo);
+	rlog_object_handlers.free_obj = php_rlog_object_free_storage;
+#endif
+	rlog_object_handlers.clone_obj = NULL;
+	php_rlog_entry = zend_register_internal_class(&ce TSRMLS_CC);
+
 	ZEND_INIT_MODULE_GLOBALS(rlog, php_rlog_init_globals, NULL);
 	REGISTER_INI_ENTRIES();
-
-	le_rlog = zend_register_list_destructors_ex(rlog_dtor, NULL, le_rlog_name, module_number);
 
 	return SUCCESS;
 }
@@ -221,24 +302,12 @@ PHP_MINFO_FUNCTION(rlog)
 }
 /* }}} */
 
-/* {{{ rlog_functions[]
- *
- * Every user visible function must have an entry in rlog_functions[].
- */
-const zend_function_entry rlog_functions[] = {
-	PHP_FE(rlog_open,	NULL)
-	PHP_FE(rlog_write,	NULL)
-	PHP_FE(rlog_close,	NULL)
-	PHP_FE_END	/* Must be the last line in rlog_functions[] */
-};
-/* }}} */
-
 /* {{{ rlog_module_entry
  */
 zend_module_entry rlog_module_entry = {
 	STANDARD_MODULE_HEADER,
 	"rlog",
-	rlog_functions,
+	NULL,
 	PHP_MINIT(rlog),
 	PHP_MSHUTDOWN(rlog),
 	PHP_RINIT(rlog),

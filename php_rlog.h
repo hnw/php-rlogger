@@ -13,6 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef PHP_RLOG_H
 #define PHP_RLOG_H
 
+#include "Zend/zend_types.h"
+
 extern zend_module_entry rlog_module_entry;
 #define phpext_rlog_ptr &rlog_module_entry
 
@@ -30,9 +32,24 @@ extern zend_module_entry rlog_module_entry;
 #include "TSRM.h"
 #endif
 
-typedef struct {
-	struct rlog *ptr;
-} php_rlog;
+typedef struct _php_rlog_object {
+#if PHP_VERSION_ID < 70000
+	zend_object zo;
+#endif
+	struct rlog *rlog;
+	int initialized;
+#if PHP_VERSION_ID >= 70000
+	zend_object zo;
+#endif
+} php_rlog_object;
+
+#if PHP_VERSION_ID >= 70000
+static inline php_rlog_object *php_rlog_from_obj(zend_object *obj) {
+        return (php_rlog_object*)((char*)(obj) - XtOffsetOf(php_rlog_object, zo));
+}
+
+#define Z_RLOG_P(zv)  php_rlog_from_obj(Z_OBJ_P((zv)))
+#endif
 
 ZEND_BEGIN_MODULE_GLOBALS(rlog)
 	char *target;
