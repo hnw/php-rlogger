@@ -36,7 +36,7 @@ static int le_rlog;
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("rlog.target", "unix:///var/run/rlogd/rloggerd.sock", PHP_INI_ALL, OnUpdateString, target, zend_rlog_globals, rlog_globals)
+    STD_PHP_INI_ENTRY("rlog.address", "unix:///var/run/rlogd/rloggerd.sock", PHP_INI_ALL, OnUpdateString, address, zend_rlog_globals, rlog_globals)
     STD_PHP_INI_ENTRY("rlog.timeout", "3000", PHP_INI_ALL, OnUpdateLong, timeout, zend_rlog_globals, rlog_globals) // 3sec
 PHP_INI_END()
 /* }}} */
@@ -78,7 +78,7 @@ PHP_METHOD(rlog, __construct)
 
 	switch (ZEND_NUM_ARGS()) {
 	case 0:
-		address = INI_STR("rlog.target");
+		address = INI_STR("rlog.address");
 	case 1:
 		timeout = INI_INT("rlog.timeout");
 	}
@@ -166,7 +166,7 @@ PHP_METHOD(rlog, close)
  */
 static void php_rlog_init_globals(zend_rlog_globals *rlog_globals TSRMLS_DC)
 {
-	rlog_globals->target = NULL;
+	rlog_globals->address = NULL;
 	rlog_globals->timeout = 3000;
 }
 /* }}} */

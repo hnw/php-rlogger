@@ -52,7 +52,7 @@ static inline php_rlog_object *php_rlog_from_obj(zend_object *obj) {
 #endif
 
 ZEND_BEGIN_MODULE_GLOBALS(rlog)
-	char *target;
+	char *address;
 #if PHP_VERSION_ID >= 70000
 	zend_long timeout;
 #else
