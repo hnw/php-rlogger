@@ -118,6 +118,8 @@ PHP_METHOD(rlog, write)
 	rlog_obj = (php_rlog_object *)zend_object_store_get_object(object TSRMLS_CC);
 #endif
 
+	RLOG_CHECK_INITIALIZED(rlog_obj);
+
 	return_code = rlog_write(rlog_obj->rlog, tag, (size_t)tag_len, str, (size_t)str_len);
 
 	if (return_code == 0) {
@@ -135,17 +137,23 @@ PHP_METHOD(rlog, close)
 	zval *object = getThis();
 	php_rlog_object *rlog_obj;
 
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
 #if PHP_VERSION_ID >= 70000
 	rlog_obj = Z_RLOG_P(object);
 #else
 	rlog_obj = (php_rlog_object *)zend_object_store_get_object(object TSRMLS_CC);
 #endif
 
-	RLOG_CHECK_INITIALIZED(rlog_obj);
-	
-	rlog_close(rlog_obj->rlog);
-	rlog_obj->rlog = NULL;
-	rlog_obj->initialized = 0;
+	if (rlog_obj->initialized) {
+		if (rlog_obj->rlog) {
+			rlog_close(rlog_obj->rlog);
+			rlog_obj->rlog = NULL;
+		}
+		rlog_obj->initialized = 0;
+	}
 
 	return;
 }
@@ -178,9 +186,11 @@ static void php_rlog_object_free_storage(
 	if (!intern) {
 		return;
 	}
-	if (intern->initialized && intern->rlog) {
-		rlog_close(intern->rlog);
-		intern->rlog = NULL;
+	if (intern->initialized) {
+		if (intern->rlog) {
+			rlog_close(intern->rlog);
+			intern->rlog = NULL;
+		}
 		intern->initialized = 0;
 	}
 	zend_object_std_dtor(&intern->zo TSRMLS_CC);
