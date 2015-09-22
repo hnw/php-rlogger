@@ -197,10 +197,11 @@ static zend_object_value php_rlog_object_new
 #endif
     (zend_class_entry *class_type TSRMLS_DC) /* {{{ */
 {
-        php_rlog_object *intern;
 #if PHP_VERSION_ID < 70000
 		zend_object_value retval;
 #endif
+        php_rlog_object *intern;
+		zval *tmp;
 
         /* Allocate memory for it */
 #if PHP_VERSION_ID >= 70000
@@ -211,7 +212,11 @@ static zend_object_value php_rlog_object_new
 #endif
 
         zend_object_std_init(&intern->zo, class_type TSRMLS_CC);
+#if PHP_VERSION_ID >= 50400
         object_properties_init(&intern->zo, class_type);
+#else
+		zend_hash_copy(intern->zo.properties, &class_type->default_properties, (copy_ctor_func_t) zval_property_ctor,(void *) &tmp, sizeof(zval *));
+#endif
 
 #if PHP_VERSION_ID >= 70000
         intern->zo.handlers = &rlog_object_handlers;
