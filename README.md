@@ -41,7 +41,7 @@ extension=rlog.so
 
 # Usage
 
-## Rlog::__construct
+## Rlog::__construct()
 
 Open socket for logging.
 
@@ -51,7 +51,7 @@ int Rlog::__construct([string address, [int timeout]])
 
 Specify `address` for rloggerd listening address.
 
-## Rlog::write
+## Rlog::write()
 
 Write message with tag.
 
@@ -59,7 +59,7 @@ Write message with tag.
 int Rlog::write(string tag, string str)
 ```
 
-## Rlog::close
+## Rlog::close()
 
 Close socket.
 
@@ -67,7 +67,7 @@ Close socket.
 void Rlog::close()
 ```
 
-Note: All socket would be closed in object destructor. So, it is not necessary to calling `close()` explicitly.
+Note: All open sockets would be closed in object destructor. So, it is not necessary to call `close()` explicitly.
 
 ## Ini settings
 
