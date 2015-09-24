@@ -13,7 +13,7 @@ env:
 
 before_install:
   - pushd ..
-  - git clone -b use-pic https://github.com/hnw/rlogd.git rlogd
+  - git clone https://github.com/pandax381/rlogd.git rlogd
   - cd rlogd
   - ./autogen.sh
   - ./configure
