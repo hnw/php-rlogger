@@ -1,4 +1,4 @@
-# php-rlog [![Build Status](https://travis-ci.org/hnw/php-rlog.svg?branch=master)](https://travis-ci.org/hnw/php-rlog)
+# php-rlogger [![Build Status](https://travis-ci.org/hnw/php-rlogger.svg?branch=master)](https://travis-ci.org/hnw/php-rlogger)
 
 A PHP extension for rlogd (see: https://github.com/pandax381/rlogd )
 
@@ -17,18 +17,17 @@ git clone https://github.com/pandax381/rlogd.git rlogd
 cd rlogd
 ./autogen.sh
 ./configure
-cd src
 make
 cd ..
 ```
 
-Now build and install php-rlog.
+Now build and install php-rlogger.
 
 ```
-git clone https://github.com/hnw/php-rlog.git
-cd php-rlog
+git clone https://github.com/hnw/php-rlogger.git
+cd php-rlogger
 phpize
-./configure --with-librlog-dir=../rlogd/
+./configure --with-rlogd-src-dir=../rlogd/
 make
 make install
 ```
@@ -36,60 +35,60 @@ make install
 Then edit your 'php.ini'.
 
 ```
-extension=rlog.so
+extension=rlogger.so
 ```
 
 # Usage
 
-## Rlog::__construct()
+## Rlogger::__construct()
 
 Open socket for logging.
 
 ```
-int Rlog::__construct([string address, [int timeout]])
+int Rlogger::__construct([string address, [int timeout]])
 ```
 
 Specify `address` for rloggerd listening address.
 
-## Rlog::write()
+## Rlogger::write()
 
 Write message with tag.
 
 ```
-int Rlog::write(string tag, string str)
+int Rlogger::write(string tag, string str)
 ```
 
-## Rlog::close()
+## Rlogger::close()
 
 Close socket.
 
 ```
-void Rlog::close()
+void Rlogger::close()
 ```
 
 Note: All open sockets would be closed in object destructor. So, it is not necessary to call `close()` explicitly.
 
 ## Ini settings
 
-### rlog.address
+### rlogger.address
 
-Specify default address for `Rlog::__construct()` (default: `"unix:///var/run/rlogd/rloggerd.sock"` )
+Specify default address for `Rlogger::__construct()` (default: `"unix:///var/run/rlogd/rloggerd.sock"` )
 
-### rlog.timeout
+### rlogger.timeout
 
-Specify default timeout msec for `Rlog::__construct()` (default: 3000)
+Specify default timeout msec for `Rlogger::__construct()` (default: 3000)
 
 
 ## Example
 
 ```php
 <?php
-$rlog = new Rlog();
-$rlog->write("example.acc", "Normal log messages");
+$rlogger = new Rlogger();
+$rlogger->write("example.acc", "Normal log messages");
 try {
     // Critical operations...
 } catch (Exception $e) {
-    $rlog->write("example.err", $e->getMessage());
+    $rlogger->write("example.err", $e->getMessage());
     throw $e;
 }
 ```

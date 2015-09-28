@@ -1,10 +1,10 @@
 --TEST--
-Check for rlog presence
+Check for rlogger presence
 --SKIPIF--
-<?php if (!extension_loaded("rlog")) print "skip"; ?>
+<?php if (!extension_loaded("rlogger")) print "skip"; ?>
 --FILE--
 <?php
-echo "rlog extension is available";
+echo "rlogger extension is available";
 /*
 	you can add regression tests for your extension here
 
@@ -18,4 +18,4 @@ echo "rlog extension is available";
 */
 ?>
 --EXPECT--
-rlog extension is available
+rlogger extension is available

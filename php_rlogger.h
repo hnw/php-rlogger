@@ -10,70 +10,70 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef PHP_RLOG_H
-#define PHP_RLOG_H
+#ifndef PHP_RLOGGER_H
+#define PHP_RLOGGER_H
 
 #include "Zend/zend_types.h"
 
-extern zend_module_entry rlog_module_entry;
-#define phpext_rlog_ptr &rlog_module_entry
+extern zend_module_entry rlogger_module_entry;
+#define phpext_rlogger_ptr &rlogger_module_entry
 
-#define PHP_RLOG_VERSION "0.1.0"
+#define PHP_RLOGGER_VERSION "0.1.0"
 
 #ifdef PHP_WIN32
-#	define PHP_RLOG_API __declspec(dllexport)
+#	define PHP_RLOGGER_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_RLOG_API __attribute__ ((visibility("default")))
+#	define PHP_RLOGGER_API __attribute__ ((visibility("default")))
 #else
-#	define PHP_RLOG_API
+#	define PHP_RLOGGER_API
 #endif
 
 #ifdef ZTS
 #include "TSRM.h"
 #endif
 
-typedef struct _php_rlog_object {
+typedef struct _php_rlogger_object {
 #if PHP_VERSION_ID < 70000
 	zend_object zo;
 #endif
-	struct rlog *rlog;
+	struct rlogger *rlogger;
 	int initialized;
 #if PHP_VERSION_ID >= 70000
 	zend_object zo;
 #endif
-} php_rlog_object;
+} php_rlogger_object;
 
 #if PHP_VERSION_ID >= 70000
-static inline php_rlog_object *php_rlog_from_obj(zend_object *obj) {
-        return (php_rlog_object*)((char*)(obj) - XtOffsetOf(php_rlog_object, zo));
+static inline php_rlogger_object *php_rlogger_from_obj(zend_object *obj) {
+        return (php_rlogger_object*)((char*)(obj) - XtOffsetOf(php_rlogger_object, zo));
 }
 
-#define Z_RLOG_P(zv)  php_rlog_from_obj(Z_OBJ_P((zv)))
+#define Z_RLOGGER_P(zv)  php_rlogger_from_obj(Z_OBJ_P((zv)))
 #endif
 
-ZEND_BEGIN_MODULE_GLOBALS(rlog)
+ZEND_BEGIN_MODULE_GLOBALS(rlogger)
 	char *address;
 #if PHP_VERSION_ID >= 70000
 	zend_long timeout;
 #else
 	long timeout;
 #endif
-ZEND_END_MODULE_GLOBALS(rlog)
+ZEND_END_MODULE_GLOBALS(rlogger)
 
 #if PHP_VERSION_ID >= 70000
-#    define RLOG_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(rlog, v)
-#    if defined(ZTS) && defined(COMPILE_DL_RLOG)
+#    define RLOGGER_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(rlogger, v)
+#    if defined(ZTS) && defined(COMPILE_DL_RLOGGER)
 ZEND_TSRMLS_CACHE_EXTERN();
 #    endif
 #else
 #    ifdef ZTS
-#        define RLOG_G(v) TSRMG(rlog_globals_id, zend_rlog_globals *, v)
+#        define RLOGGER_G(v) TSRMG(rlogger_globals_id, zend_rlogger_globals *, v)
 #    else
-#        define RLOG_G(v) (rlog_globals.v)
+#        define RLOGGER_G(v) (rlogger_globals.v)
 #    endif
 #endif
 
-#endif	/* PHP_RLOG_H */
+#endif	/* PHP_RLOGGER_H */
 
 /*
  * Local variables:

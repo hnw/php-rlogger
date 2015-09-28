@@ -1,9 +1,9 @@
 --TEST--
-Check for Rlog::write() exceptions
+Check for Rlogger::write() exceptions
 --SKIPIF--
 <?php
-	extension_loaded('rlog') or die('skip rlog not available');
-    $required_class = array("rlog");
+	extension_loaded('rlogger') or die('skip rlogger not available');
+    $required_class = array("rlogger");
     foreach ($required_class as $class_name) {
         if (!class_exists($class_name)) {
             die("skip $class_name class is not available.");
@@ -18,18 +18,18 @@ Check for Rlog::write() exceptions
 ?>
 --FILE--
 <?php
-$socket_path = tempnam("/tmp", "rlog_") . ".sock";
+$socket_path = tempnam("/tmp", "rlogger_") . ".sock";
 $socket_url  = "unix://" . $socket_path;
 
 $socket = stream_socket_server($socket_url);
-$rlog = new Rlog($socket_url);
-$rlog->close();
+$rlogger = new Rlogger($socket_url);
+$rlogger->close();
 try {
-    $ret = $rlog->write("example.acc", "foobar");
+    $ret = $rlogger->write("example.acc", "foobar");
 } catch (Exception $e) {
     var_dump($e->getMessage());
 }
 fclose($socket);
 unlink($socket_path);
 --EXPECT--
-string(50) "The Rlog object has not been correctly initialised"
+string(53) "The Rlogger object has not been correctly initialised"

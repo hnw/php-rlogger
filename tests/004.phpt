@@ -1,9 +1,9 @@
 --TEST--
-Check for Rlog::close()
+Check for Rlogger::close()
 --SKIPIF--
 <?php
-	extension_loaded('rlog') or die('skip rlog not available');
-    $required_class = array("rlog");
+	extension_loaded('rlogger') or die('skip rlogger not available');
+    $required_class = array("rlogger");
     foreach ($required_class as $class_name) {
         if (!class_exists($class_name)) {
             die("skip $class_name class is not available.");
@@ -18,14 +18,14 @@ Check for Rlog::close()
 ?>
 --FILE--
 <?php
-$socket_path = tempnam("/tmp", "rlog_") . ".sock";
+$socket_path = tempnam("/tmp", "rlogger_") . ".sock";
 $socket_url  = "unix://" . $socket_path;
 
 $socket = stream_socket_server($socket_url);
-$rlog = new Rlog($socket_url);
-$rlog->close();
-var_dump(is_object($rlog));
-$rlog = null;
+$rlogger = new Rlogger($socket_url);
+$rlogger->close();
+var_dump(is_object($rlogger));
+$rlogger = null;
 fclose($socket);
 unlink($socket_path);
 --EXPECT--

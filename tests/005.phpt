@@ -1,9 +1,9 @@
 --TEST--
-Check for Rlog properties
+Check for Rlogger properties
 --SKIPIF--
 <?php
-	extension_loaded('rlog') or die('skip rlog not available');
-    $required_class = array("rlog");
+	extension_loaded('rlogger') or die('skip rlogger not available');
+    $required_class = array("rlogger");
     foreach ($required_class as $class_name) {
         if (!class_exists($class_name)) {
             die("skip $class_name class is not available.");
@@ -18,22 +18,22 @@ Check for Rlog properties
 ?>
 --FILE--
 <?php
-$socket_path = tempnam("/tmp", "rlog_") . ".sock";
+$socket_path = tempnam("/tmp", "rlogger_") . ".sock";
 $socket_url  = "unix://" . $socket_path;
 
 $socket = stream_socket_server($socket_url);
-$rlog = new Rlog($socket_url);
-var_dump($rlog);
-$rlog->close();
-var_dump($rlog);
+$rlogger = new Rlogger($socket_url);
+var_dump($rlogger);
+$rlogger->close();
+var_dump($rlogger);
 fclose($socket);
 unlink($socket_path);
 --EXPECTF--
-%sRlog%s#%d (%d) {
+%sRlogger%s#%d (%d) {
   %saddress%s=>
-  string(%d) "unix://%s/rlog_%s.sock"
+  string(%d) "unix://%s/rlogger_%s.sock"
 }
-%sRlog%s#%d (%d) {
+%sRlogger%s#%d (%d) {
   %saddress%s=>
   string(0) ""
 }

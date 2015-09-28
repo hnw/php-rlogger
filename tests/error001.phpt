@@ -1,9 +1,9 @@
 --TEST--
-Check for Rlog constructor exceptions
+Check for Rlogger constructor exceptions
 --SKIPIF--
 <?php
-	extension_loaded('rlog') or die('skip rlog not available');
-    $required_class = array("rlog");
+	extension_loaded('rlogger') or die('skip rlogger not available');
+    $required_class = array("rlogger");
     foreach ($required_class as $class_name) {
         if (!class_exists($class_name)) {
             die("skip $class_name class is not available.");
@@ -12,25 +12,25 @@ Check for Rlog constructor exceptions
 ?>
 --FILE--
 <?php
-$socket_path = tempnam("/tmp", "rlog_") . ".sock";
+$socket_path = tempnam("/tmp", "rlogger_") . ".sock";
 
 $socket_url  = "foobar://" . $socket_path;
 try {
-    $rlog = new Rlog($socket_url);
+    $rlogger = new Rlogger($socket_url);
 } catch (Exception $e) {
-    $rlog = null;
+    $rlogger = null;
     var_dump($e->getMessage());
 }
-var_dump($rlog);
+var_dump($rlogger);
 
 $socket_url  = "unix://" . $socket_path;
 try {
-    $rlog = new Rlog($socket_url);
+    $rlogger = new Rlogger($socket_url);
 } catch (Exception $e) {
     var_dump($e->getMessage());
-    $rlog = null;
+    $rlogger = null;
 }
-var_dump($rlog);
+var_dump($rlogger);
 --EXPECTF--
 warning: getaddrinfo: %s, host=%s, port=%s (common.c:%d)
 string(%d) "Unable to open socket: foobar://%s"

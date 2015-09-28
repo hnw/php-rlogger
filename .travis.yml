@@ -22,7 +22,7 @@ before_install:
   - popd
 
 before_script:
-  - phpize && ./configure --with-librlog-dir=../rlogd/ && make
+  - phpize && ./configure --with-rlogd-src-dir=../rlogd/ && make
 
 script:
   - make test | tee test-output.txt && grep 'TEST SUMMARY$' test-output.txt > /dev/null ; test $? '!=' 0
