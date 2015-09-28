@@ -53,7 +53,7 @@ PHP_METHOD(rlogger, __construct)
 {
 	zval *object = getThis();
 	php_rlogger_object *rlogger_obj;
-	struct rlogger *rlogger;
+	struct rlog *rlog;
 	char *address = NULL;
 	size_t address_len;
 	int timeout;
@@ -83,13 +83,13 @@ PHP_METHOD(rlogger, __construct)
 		timeout = INI_INT("rlogger.timeout");
 	}
 
-	rlogger = rlog_open(address, timeout);
-	if (rlogger == NULL) {
+	rlog = rlog_open(address, timeout);
+	if (rlog == NULL) {
 		zend_throw_exception_ex(zend_exception_get_default(TSRMLS_C), 0 TSRMLS_CC, "Unable to open socket: %s", address);
 		return;
 	}
 
-	rlogger_obj->rlogger = rlogger;
+	rlogger_obj->rlog = rlog;
 	rlogger_obj->initialized = 1;
 
 	zend_update_property_string(php_rlogger_entry, object, "address", sizeof("address") - 1, address TSRMLS_CC);
@@ -122,7 +122,7 @@ PHP_METHOD(rlogger, write)
 
 	RLOGGER_CHECK_INITIALIZED(rlogger_obj);
 
-	return_code = rlog_write(rlogger_obj->rlogger, tag, (size_t)tag_len, str, (size_t)str_len);
+	return_code = rlog_write(rlogger_obj->rlog, tag, (size_t)tag_len, str, (size_t)str_len);
 
 	if (return_code == 0) {
 		RETURN_TRUE;
@@ -150,9 +150,9 @@ PHP_METHOD(rlogger, close)
 #endif
 
 	if (rlogger_obj->initialized) {
-		if (rlogger_obj->rlogger) {
-			rlog_close(rlogger_obj->rlogger);
-			rlogger_obj->rlogger = NULL;
+		if (rlogger_obj->rlog) {
+			rlog_close(rlogger_obj->rlog);
+			rlogger_obj->rlog = NULL;
 		}
 		rlogger_obj->initialized = 0;
 		zend_update_property_string(php_rlogger_entry, object, "address", sizeof("address") - 1, "" TSRMLS_CC);
@@ -190,9 +190,9 @@ static void php_rlogger_object_free_storage(
 		return;
 	}
 	if (intern->initialized) {
-		if (intern->rlogger) {
-			rlog_close(intern->rlogger);
-			intern->rlogger = NULL;
+		if (intern->rlog) {
+			rlog_close(intern->rlog);
+			intern->rlog = NULL;
 		}
 		intern->initialized = 0;
 	}

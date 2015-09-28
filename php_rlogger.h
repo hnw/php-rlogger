@@ -36,7 +36,7 @@ typedef struct _php_rlogger_object {
 #if PHP_VERSION_ID < 70000
 	zend_object zo;
 #endif
-	struct rlogger *rlogger;
+	struct rlog *rlog;
 	int initialized;
 #if PHP_VERSION_ID >= 70000
 	zend_object zo;
