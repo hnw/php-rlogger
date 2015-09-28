@@ -32,7 +32,7 @@ make
 make install
 ```
 
-Then edit your 'php.ini'.
+Then edit your `php.ini`.
 
 ```
 extension=rlogger.so
