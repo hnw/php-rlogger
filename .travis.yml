@@ -9,8 +9,10 @@ compiler:
   - clang
   - gcc
   
-before_install:
-  - echo $CC
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
 
 before_script:
   - phpize && ./configure --with-rlogd-src-dir=../rlogd/ && make
