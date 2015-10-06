@@ -1,14 +1,16 @@
 sudo: false
 language: c
-os: osx
 
-env:
-  - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all" ax_cv_have_EV=yes ax_cv_have_PCRE=yes
+os:
+  - linux
+  - osx
 
+compiler:
+  - clang
+  - gcc
+  
 before_install:
-  - ls -la /Users/travis/
-  - mkdir -p /Users/travis/.phpenv/versions/
-  - phpenv global 7.0
+  - echo $CC
 
 before_script:
   - phpize && ./configure --with-rlogd-src-dir=../rlogd/ && make
