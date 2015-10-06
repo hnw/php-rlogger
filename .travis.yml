@@ -1,10 +1,6 @@
 sudo: false
-language: php
-
-# Multiple OS (beta feature, see http://docs.travis-ci.com/user/multi-os/ )
-os:
-  - linux
-  - osx
+language: c
+os: osx
 
 env:
   - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all" ax_cv_have_EV=yes ax_cv_have_PCRE=yes
