@@ -1,25 +1,18 @@
 sudo: false
 language: php
 
-php:
-  - 5.3
-  - 5.4
-  - 5.5
-  - 5.6
-  - 7.0
+# Multiple OS (beta feature, see http://docs.travis-ci.com/user/multi-os/ )
+os:
+  - linux
+  - osx
 
 env:
   - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all" ax_cv_have_EV=yes ax_cv_have_PCRE=yes
 
 before_install:
-  - pushd ..
-  - git clone https://github.com/pandax381/rlogd.git rlogd
-  - cd rlogd
-  - ./autogen.sh
-  - ./configure
-  - cd src
-  - make librlog.a
-  - popd
+  - ls -la /Users/travis/
+  - mkdir -p /Users/travis/.phpenv/versions/
+  - phpenv global 7.0
 
 before_script:
   - phpize && ./configure --with-rlogd-src-dir=../rlogd/ && make
