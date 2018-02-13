@@ -4,7 +4,7 @@ A PHP extension for rlogd (see: https://github.com/pandax381/rlogd )
 
 # Requirement
 
-- PHP 5.3.x - 7.0.x
+- PHP 5.3.x - 7.2.x
 - [rlogd](https://github.com/pandax381/rlogd)
 
 # Installation
